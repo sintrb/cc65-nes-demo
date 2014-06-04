@@ -1,0 +1,7 @@
+Mapper 0
+PRG ROM 1x16Kb
+CHR ROM 1x8Kb
+
+程序(PRG)的加载CPU段$C000-$FFFF，镜像到$8000-$BFFF。没有切页。
+
+图库(CHR)的加载PPU段$0000-$1FFF。没有切页。
