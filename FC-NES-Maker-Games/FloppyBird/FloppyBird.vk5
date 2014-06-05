@@ -1,0 +1,16 @@
+[Project]
+name=FloppyBird
+
+
+[List]
+Count=9
+0=crt0.s
+1=nes.inc
+2=nes.cfg
+3=zeropage.inc
+4=Build.cmd
+5=mylib.c
+6=Main.c
+
+7=ascii.chr
+8=map.nmp
