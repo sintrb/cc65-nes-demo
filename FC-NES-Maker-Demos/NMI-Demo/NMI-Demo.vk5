@@ -1,0 +1,15 @@
+[Project]
+name=NMI-Demo
+
+
+[List]
+Count=8
+0=HelloWorld.c
+1=crt0.s
+2=nes.inc
+3=nes.cfg
+4=ASCII.chr
+5=zeropage.inc
+6=Build.cmd
+
+7=²Ù×÷²½Öè.txt

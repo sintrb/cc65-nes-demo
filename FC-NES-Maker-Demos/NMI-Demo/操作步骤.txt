@@ -1,0 +1,18 @@
+1.新建大师工程
+2.在源代码文件（HelloWorld.c）中添加一个C语言的中断函数，注意:不能有参数和返回值。
+假设我们在nmi中断函数名为mynmi，并且只是简单的让全局变量nmict自加1：
+	void mynmi()
+	{
+		++nmict;
+	}
+3.为了验证mynmi被调用，我们在程序的死循环里面不停的输出nmict变量值:
+	gotoxy(10,10);
+	cprintf("nmict=%05d", nmict);
+
+4.编辑crt0.s，在其原来的nmi中断中（120行左右）添加调用我们自定义的mynmi。
+先用.import导入我们自定义的中断函数mynmi：
+	.import	_mynmi	; 先导入我们自定义的mynmi函数，C函数让汇编调用需要一个下划线(_)
+紧接着调用它：
+	jsr		_mynmi	; 执行我们自定义的mynmi函数
+
+5.编译运行看看效果吧
