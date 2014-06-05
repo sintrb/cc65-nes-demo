@@ -1,0 +1,16 @@
+[Project]
+name=SLIB
+
+
+[List]
+Count=9
+0=ASCII.chr
+1=Build.cmd
+2=crt0.s
+3=HelloWorld.c
+4=nes.cfg
+5=nes.inc
+6=zeropage.inc
+
+7=slib.c
+8=slib.h

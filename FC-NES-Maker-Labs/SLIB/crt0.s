@@ -153,32 +153,6 @@ irq:
 
 .segment "CHARS"
 
-        .incbin	"ascii.chr"
-
-		
-; 只读数据段
-.segment "RODATA"
-
-; 添加相关资源文件，并导出
-
-; 背景命名表
-.export _map_nam_s
-_map_nam_s:
-	.incbin	"map.nam"
-
-; 背景调色表
-.export _map_col_s
-_map_col_s:
-	.incbin	"map.col"
-
-; 背景属性表
-.export _map_atb_s
-_map_atb_s:
-	.incbin	"map.atb"
-	
-	
-	
-	
-	
+        .incbin	"ASCII.chr"
 
 
