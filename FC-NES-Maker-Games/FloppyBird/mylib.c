@@ -1,7 +1,13 @@
 /*********************************************/
+/*************mylib.c v1.3********************/
+/*************2014-06-06***********************/
+/*************by RobinTang**********************/
+/**********************************************/
+
+/*********************************************/
 /*************mylib.c v1.2********************/
 /*************2010-06-23***********************/
-/*************by rbbadboy**********************/
+/*************by trbbadboy**********************/
 /*************QQ:472497084*********************/
 /*************E-mail:trbbadboy@qq.com**********/
 /**********************************************/
@@ -331,6 +337,10 @@ void puts_xy(u16 _nametable,u8 _x,u8 _y,char *s)	//向名字表_nametable的(x,y)位置
 											//about name table
 #define load_name_table_0(_ptr)	copy_RAM_to_VRAM(_ptr,VRAM_name_0,name_length)	//载入名字表0
 #define load_name_table_1(_ptr)	copy_RAM_to_VRAM(_ptr,VRAM_name_1,name_length)	//载入名字表1
+
+#define load_name_attr_0(_ptr)	copy_RAM_to_VRAM(_ptr,VRAM_attr_0,attr_length)	//载入属性表0
+#define load_name_attr_1(_ptr)	copy_RAM_to_VRAM(_ptr,VRAM_attr_1,attr_length)	//载入属性表1
+
 #define load_full_name_0(_ptr)	copy_RAM_to_VRAM(_ptr,VRAM_name_0,full_name_l)	//载入完整的名字表0(包括属性表0)
 #define load_full_name_1(_ptr)	copy_RAM_to_VRAM(_ptr,VRAM_name_1,full_name_l)	//载入完整的名字表1(包括属性表1)
 #define load_all_name(_ptr)			copy_RAM_to_VRAM(_ptr,VRAM_name_0,all_name_l)	//载入全部的名字表(两个名字表和两个属性表)

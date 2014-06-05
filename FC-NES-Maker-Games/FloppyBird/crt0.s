@@ -99,26 +99,9 @@ nmi:    pha
         pha
         txa
         pha
-
-        lda     #1
-        sta     VBLANK_FLAG
-
-        inc     tickcount
-        bne     @s
-        inc     tickcount+1
-
-@s:     jsr     ppubuf_flush
-
-        ; reset the video counter
-        lda     #$20
-        sta     PPU_VRAM_ADDR2
-        lda     #$00
-        sta     PPU_VRAM_ADDR2
-
-        ; reset scrolling
-        sta     PPU_VRAM_ADDR1
-        sta     PPU_VRAM_ADDR1
-	
+		
+		.import		_mynmi
+		jsr			_mynmi
 		
         pla
         tax
