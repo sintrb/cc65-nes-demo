@@ -90,6 +90,7 @@ u8 read_joystick(u16 _joystick)			//读手柄函数
 //关于PPU控制寄存器1
 #define PPU_ctrl_reg_1			0x2000	//PPU控制寄存器1映射地址
 
+#define REG_1_name				0x03	//名字表掩码
 #define REG_1_name_0			0x00	//使用名字表0($2000)
 #define REG_1_name_1			0x01	//使用名字表1($2400)
 #define REG_1_name_2			0x02	//使用名字表2($2800)

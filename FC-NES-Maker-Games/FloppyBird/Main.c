@@ -9,12 +9,13 @@ extern u8 map_nam_s, map_col_s, map_atb_s;
 
 u8 PPUR1 = 0, PPUR2 = 0, scroll_x = 0;
 u8 key, okey;
+SPRITE sp0;
 
 #define NMI_ENABLE()	{PPUR1 |= REG_1_VBlank_able; address(PPU_ctrl_reg_1) = PPUR1;}
 #define NMI_DISABLE()	{PPUR1 &= ~REG_1_VBlank_able; address(PPU_ctrl_reg_1) = PPUR1;}
 
-
-
+// ≈–∂œµ±«∞ «∑Ò «√˚◊÷±Ì0
+#define IS_NAME0()	((PPUR1 & REG_1_name) == REG_1_name_0)
 
 void mynmi()
 {
@@ -23,31 +24,79 @@ void mynmi()
 	address(PPU_ctrl_reg_1) = PPUR1;
 }
 
+void switchname()
+{
+	if(IS_NAME0()){
+		// «–µΩ1
+		PPUR1 &= ~REG_1_name;
+		PPUR1 |= REG_1_name_1;
+	}
+	else{
+		// «–µΩ0
+		PPUR1 &= ~REG_1_name;
+		PPUR1 |= REG_1_name_0;
+	}
+}
+
+// ±≥æ∞”““∆
+void scrright()
+{
+	if(scroll_x == 255){
+		switchname();
+		scroll_x = 0;
+	}
+	else{
+		++scroll_x;
+	}
+}
+
+// ±≥æ∞◊Û“∆
+void scrleft()
+{
+	if(scroll_x == 0){
+		switchname();
+		scroll_x = 255;
+	}
+	else{
+		--scroll_x;
+	}
+}
+
+void keyproc()
+{
+	if(presskey(button_RIGHT)){
+		scrright();
+	}
+	else if(presskey(button_LEFT)){
+		scrleft();
+	}
+}
+
 void main()
 {
+	u8 ix=0;
+	u8 tof = 0xA0;
 	PPUR2 = 0x00;
 	NMI_DISABLE();
 	// º”‘ÿ±≥æ∞
 	load_name_table_0(map_nam);
 	load_name_attr_0(map_atb);
 	load_BG_palette(map_col);
+	load_SP_palette(map_col);
 	
 	load_name_table_1(map_nam+name_length);
 	load_name_attr_1(map_atb+palette_len);
 	
 	NMI_ENABLE();
-	PPUR2 = REG_2_IM_able;
+	PPUR2 = REG_2_IM_able | REG_2_show_all_IM | REG_2_SP_able | REG_2_show_all_SP;
 	//address(PPU_ctrl_reg_2) = REG_2_IM_able;
 	gotoxy(10,10);
 	cprintf("Hello World!!!");
 	for(;;){
 		key = read_joy();
-		if(presskey(button_RIGHT))
-			++scroll_x;
-		else if(presskey(button_LEFT))
-			--scroll_x;	
+		scrright();
 		waitvblank();
-		
+		++ix;
 		okey = key;
 	}
 }
