@@ -3,7 +3,7 @@ name=FloppyBird
 
 
 [List]
-Count=10
+Count=11
 0=crt0.s
 1=nes.inc
 2=nes.cfg
@@ -15,3 +15,4 @@ Count=10
 7=ascii.chr
 8=map.nmp
 9=²½ÖèËµÃ÷.txt
+10=vardef.inc

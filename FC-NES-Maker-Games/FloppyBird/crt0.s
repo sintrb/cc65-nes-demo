@@ -20,7 +20,7 @@
 	.import		__RODATA_LOAD__,__RODATA_RUN__, __RODATA_SIZE__
 
 
-        .include        "zeropage.inc"
+    .include        "zeropage.inc"
 	.include        "nes.inc"
 
 
@@ -93,21 +93,21 @@ _exit:  jsr	donelib		; Run module destructors
 ; updates PPU Memory (buffered)
 ; updates VBLANK_FLAG and tickcount
 ; ------------------------------------------------------------------------
+.include        "vardef.inc"
+; .importzp	ticks, scrox
 
 nmi:    pha
-        tya
-        pha
-        txa
-        pha
-		
+		tya
+		pha
+		txa
+		pha
 		.import		_mynmi
 		jsr			_mynmi
-		
-        pla
-        tax
-        pla
-        tay
-        pla
+		pla
+		tax
+		pla
+		tay
+		pla
 
 ; Interrupt exit
 

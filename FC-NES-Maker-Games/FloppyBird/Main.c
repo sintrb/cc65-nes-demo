@@ -17,13 +17,6 @@ SPRITE sp0;
 // 判断当前是否是名字表0
 #define IS_NAME0()	((PPUR1 & REG_1_name) == REG_1_name_0)
 
-void mynmi()
-{
-	set_scroll(scroll_x,0);
-	address(PPU_ctrl_reg_2) = PPUR2;
-	address(PPU_ctrl_reg_1) = PPUR1;
-}
-
 void switchname()
 {
 	if(IS_NAME0()){
@@ -72,6 +65,30 @@ void keyproc()
 	}
 }
 
+u8 i;
+u8 ch;
+void mynmi()
+{
+	if(scroll_x%8==0){
+		if(IS_NAME0()){
+			set_VRAM_add(VRAM_name_1+scroll_x/8);
+		}
+		else{
+			set_VRAM_add(VRAM_name_0+scroll_x/8);
+		}
+		if(rnd(2))
+			ch = '#';
+		else
+			ch = 0x00;
+		for(i=0; i<10; ++i){
+			address(PPU_memory_dat) = ch;
+		}
+	}
+	set_scroll(scroll_x,0);
+	address(PPU_ctrl_reg_2) = PPUR2;
+	address(PPU_ctrl_reg_1) = PPUR1;
+}
+
 void main()
 {
 	u8 ix=0;
@@ -79,15 +96,18 @@ void main()
 	PPUR2 = 0x00;
 	NMI_DISABLE();
 	// 加载背景
-	load_name_table_0(map_nam);
-	load_name_attr_0(map_atb);
-	load_BG_palette(map_col);
+	load_name_table_0(map_nam);	// 命名表
+	load_name_attr_0(map_atb);	// 属性表
+	load_BG_palette(map_col);	// 调色
+	
+	
 	load_SP_palette(map_col);
 	
 	load_name_table_1(map_nam+name_length);
 	load_name_attr_1(map_atb+palette_len);
 	
 	NMI_ENABLE();
+	PPUR1 |= REG_1_inc_32;
 	PPUR2 = REG_2_IM_able | REG_2_show_all_IM | REG_2_SP_able | REG_2_show_all_SP;
 	//address(PPU_ctrl_reg_2) = REG_2_IM_able;
 	gotoxy(10,10);
