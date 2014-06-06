@@ -32,7 +32,10 @@ void main()
 	load_name_attr_0(map_atb);
 	load_BG_palette(map_col);
 	
-	NMI_ENABLE()
+	load_name_table_1(map_nam+name_length);
+	load_name_attr_1(map_atb+palette_len);
+	
+	NMI_ENABLE();
 	PPUR2 = REG_2_IM_able;
 	//address(PPU_ctrl_reg_2) = REG_2_IM_able;
 	gotoxy(10,10);
@@ -43,7 +46,7 @@ void main()
 			++scroll_x;
 		else if(presskey(button_LEFT))
 			--scroll_x;	
-		
+		waitvblank();
 		
 		okey = key;
 	}
