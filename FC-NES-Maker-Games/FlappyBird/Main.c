@@ -69,6 +69,7 @@ u8 i;
 u8 ch;
 void mynmi()
 {
+/*
 	if(scroll_x%8==0){
 		if(IS_NAME0()){
 			set_VRAM_add(VRAM_name_1+scroll_x/8);
@@ -84,6 +85,7 @@ void mynmi()
 			address(PPU_memory_dat) = ch;
 		}
 	}
+	*/
 	set_scroll(scroll_x,0);
 	address(PPU_ctrl_reg_2) = PPUR2;
 	address(PPU_ctrl_reg_1) = PPUR1;
@@ -104,7 +106,7 @@ void main()
 	load_SP_palette(map_col);
 	
 	load_name_table_1(map_nam+name_length);
-	load_name_attr_1(map_atb+palette_len);
+	load_name_attr_1(map_atb+attr_length);
 	
 	NMI_ENABLE();
 	PPUR1 |= REG_1_inc_32;
@@ -114,7 +116,8 @@ void main()
 	cprintf("Hello World!!!");
 	for(;;){
 		key = read_joy();
-		scrright();
+		//scrright();
+		keyproc();
 		waitvblank();
 		++ix;
 		okey = key;
