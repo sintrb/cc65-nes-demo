@@ -33,76 +33,64 @@
 
 ; ------------------------------------------------------------------------
 ; Place the startup code in a special segment.
-
-.segment       	"STARTUP"
-
+.segment	"STARTUP"
 start:
+		lda #$00
+		sta sp
+		sta sp+1
+		sei
+		cld
+		ldx #$ff
+		txs
 
-; setup the CPU and System-IRQ
+@wait1:	lda     PPU_STATUS
+        bmi     @wait1
+        
+@wait2:	lda     PPU_STATUS
+        bpl     @wait2
 
-        sei
-        cld
-	ldx     #0
-	stx     VBLANK_FLAG
-
-  	stx     ringread
-	stx     ringwrite
-	stx     ringcount
-
-        txs
-
-        lda     #$20
-@l:     sta     ringbuff,x
-	sta     ringbuff+$0100,x
-	sta     ringbuff+$0200,x
-        inx
-	bne     @l
-
-; Clear the BSS data
-
-        jsr	zerobss
-
-; initialize data
-	jsr	copydata
-
-; setup the stack
-
-        lda     #<(__SRAM_START__ + __SRAM_SIZE__)
-        sta	sp
-        lda	#>(__SRAM_START__ + __SRAM_SIZE__)
-       	sta	sp+1            ; Set argument stack ptr
-
-; Call module constructors
-
-	jsr	initlib
-
-; Push arguments and call main()
-
-       	jsr    	callmain
-
-; Call module destructors. This is also the _exit entry.
-
-_exit:  jsr	donelib		; Run module destructors
-
-; Reset the NES
-
-   	jmp start
+		lda     #<(__SRAM_START__ + __SRAM_SIZE__)
+		sta	sp
+		lda	#>(__SRAM_START__ + __SRAM_SIZE__)
+		sta	sp+1            ; Set argument stack ptr
+		jsr initlib
+		
+		lda     #$3f	;3?¨º??¡¥¨¦??¨¬
+		sta     $2006
+		lda     #$00
+		sta     $2006
+		ldx     #$3e
+@goon:	stx     $2007
+		dex
+		dex
+		bne     @goon
+;irq:
+		jsr _main
+_exit:
+		jsr	donelib
+		jmp start
 
 ; ------------------------------------------------------------------------
 ; System V-Blank Interupt
-; updates PPU Memory (buffered)
-; updates VBLANK_FLAG and tickcount
 ; ------------------------------------------------------------------------
-.include        "vardef.inc"
-; .importzp	ticks, scrox
 
 nmi:    pha
 		tya
 		pha
 		txa
 		pha
-		.import		_mynmi
-		jsr			_mynmi
+		lda		#$02
+		sta		$4014
+		lda		PPU_CTRL1_VAL
+		sta		PPU_CTRL1
+		lda		PPU_CTRL2_VAL
+		sta		PPU_CTRL2
+		lda		SCROLL_X
+		sta		PPU_VRAM_ADDR1
+		lda		SCROLL_Y
+		sta		PPU_VRAM_ADDR1
+		
+		
 		pla
 		tax
 		pla

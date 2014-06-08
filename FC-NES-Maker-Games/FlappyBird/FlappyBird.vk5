@@ -3,16 +3,16 @@ name=FlappyBird
 
 
 [List]
-Count=11
+Count=10
 0=crt0.s
 1=nes.inc
 2=nes.cfg
 3=zeropage.inc
 4=Build.cmd
-5=mylib.c
-6=Main.c
+5=Main.c
+6=ascii.chr
 
-7=ascii.chr
-8=map.nmp
-9=步骤说明.txt
-10=vardef.inc
+7=map.nmp
+8=步骤说明.txt
+9=sinnes.h
+10=sinnes.h

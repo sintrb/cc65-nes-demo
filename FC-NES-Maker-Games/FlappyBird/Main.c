@@ -1,4 +1,4 @@
-#include "mylib.c"
+#include "sinnes.h"
 extern u8 map_nam_s, map_col_s, map_atb_s;
 
 // 需进行去地址操作
@@ -6,120 +6,177 @@ extern u8 map_nam_s, map_col_s, map_atb_s;
 #define map_col (&map_col_s)
 #define map_atb (&map_atb_s)
 
-
-u8 PPUR1 = 0, PPUR2 = 0, scroll_x = 0;
-u8 key, okey;
-SPRITE sp0;
-
-#define NMI_ENABLE()	{PPUR1 |= REG_1_VBlank_able; address(PPU_ctrl_reg_1) = PPUR1;}
-#define NMI_DISABLE()	{PPUR1 &= ~REG_1_VBlank_able; address(PPU_ctrl_reg_1) = PPUR1;}
+#define NMI_ENABLE()	{PC1_VAL |= PC1_NMI; address(PPU_CTRL1) = PC1_VAL;}
+#define NMI_DISABLE()	{PC1_VAL &= ~PC1_NMI; address(PPU_CTRL1) = PC1_VAL;}
 
 // 判断当前是否是名字表0
-#define IS_NAME0()	((PPUR1 & REG_1_name) == REG_1_name_0)
+#define IS_NAME0()	((PC1_VAL & PC1_NAME_MASK) == PC1_NAME0)
+
+typedef struct // sprite struct
+{
+	u8 y; // y
+	u8 tile; // tile #
+	u8 attr; // attribute: vhp000cc(V turn, H turn,  priorite, 000 , high 2 bits of color)
+	u8 x; // x
+}t_sprite;
+
+#define SP_ATTR_VTURN	0x80	// V turn
+#define SP_ATTR_HTURN	0x40	// H turn
+#define SP_ATTR_PRI		0x20	// priorite
+#define SP_ATTR_COL		0x03	// high 2 bits of color
+
+#define sp	((t_sprite*)0x0200)
+
+#define SP_MIDLEX	0x70
+#define SP_MAXACC	18
+#define SP_MINACC	-24
+#define SP_Y_MIN	0x06
+#define SP_Y_MAX	0xC4
 
 void switchname()
 {
 	if(IS_NAME0()){
 		// 切到1
-		PPUR1 &= ~REG_1_name;
-		PPUR1 |= REG_1_name_1;
+		PC1_VAL &= ~PC1_NAME_MASK;
+		PC1_VAL |= PC1_NAME1;
 	}
 	else{
 		// 切到0
-		PPUR1 &= ~REG_1_name;
-		PPUR1 |= REG_1_name_0;
+		PC1_VAL &= ~PC1_NAME_MASK;
+		PC1_VAL |= PC1_NAME0;
 	}
 }
 
 // 背景右移
 void scrright()
 {
-	if(scroll_x == 255){
+	if(SOLX_VAL == 255){
 		switchname();
-		scroll_x = 0;
+		SOLX_VAL = 0;
 	}
 	else{
-		++scroll_x;
+		++SOLX_VAL;
 	}
 }
 
 // 背景左移
 void scrleft()
 {
-	if(scroll_x == 0){
+	if(SOLX_VAL == 0){
 		switchname();
-		scroll_x = 255;
+		SOLX_VAL = 255;
 	}
 	else{
-		--scroll_x;
+		--SOLX_VAL;
 	}
 }
 
 void keyproc()
 {
-	if(presskey(button_RIGHT)){
+	if(JOY_VAL == JOY_RIGHT){
 		scrright();
 	}
-	else if(presskey(button_LEFT)){
+	else if(JOY_VAL == JOY_LEFT){
 		scrleft();
 	}
 }
 
-u8 i;
-u8 ch;
-void mynmi()
+
+void sptile(u8 spix, u8 chrix)
 {
-/*
-	if(scroll_x%8==0){
-		if(IS_NAME0()){
-			set_VRAM_add(VRAM_name_1+scroll_x/8);
-		}
-		else{
-			set_VRAM_add(VRAM_name_0+scroll_x/8);
-		}
-		if(rnd(2))
-			ch = '#';
-		else
-			ch = 0x00;
-		for(i=0; i<10; ++i){
-			address(PPU_memory_dat) = ch;
-		}
-	}
-	*/
-	set_scroll(scroll_x,0);
-	address(PPU_ctrl_reg_2) = PPUR2;
-	address(PPU_ctrl_reg_1) = PPUR1;
+	sp[spix].tile = chrix;
+	sp[spix+1].tile = chrix+1;
+	sp[spix+2].tile = chrix+0x10;
+	sp[spix+3].tile = chrix+0x11;
+}
+
+void splocal(u8 spix, u8 x, u8 y)
+{
+	sp[spix].x = x;
+	sp[spix].y = y;
+	sp[spix+1].x = x+8;
+	sp[spix+1].y = y;
+	sp[spix+2].x = x;
+	sp[spix+2].y = y+8;
+	sp[spix+3].x = x+8;
+	sp[spix+3].y = y+8;
 }
 
 void main()
 {
-	u8 ix=0;
-	u8 tof = 0xA0;
-	PPUR2 = 0x00;
-	NMI_DISABLE();
+	u8 spx=0xc0, ix, running=0, okey;
+	int acc = 0;
+	int spy = 0x58;
+	const u8 sps[] = {0x80, 0x82, 0x84};
+	PC1_VAL = 0x00;
+	PC2_VAL = 0x00;
+	SOLX_VAL = 0x00;
+	fillram(sp, 0x100, 0x00);	// 清空精灵
+
 	// 加载背景
-	load_name_table_0(map_nam);	// 命名表
-	load_name_attr_0(map_atb);	// 属性表
-	load_BG_palette(map_col);	// 调色
+	loadname0(map_nam);	// 命名表
+	loadattr0(map_atb);	// 属性表
 	
+	loadbgpal(map_col);	// 调色
+	loadsppal(map_col);
 	
-	load_SP_palette(map_col);
-	
-	load_name_table_1(map_nam+name_length);
-	load_name_attr_1(map_atb+attr_length);
-	
+	loadname1(map_nam+VRAM_NAME_LEN);
+	loadattr1(map_atb+VRAM_ATTR_LEN);
+	sptile(1, 0x80);
+	splocal(1, spx, spy);
+	PC1_VAL |= PC1_INC32;
+	PC2_VAL = PC2_SHOW_BG | PC2_SHOW_L8BG | PC2_SHOW_SP | PC2_SHOW_L8SP;
 	NMI_ENABLE();
-	PPUR1 |= REG_1_inc_32;
-	PPUR2 = REG_2_IM_able | REG_2_show_all_IM | REG_2_SP_able | REG_2_show_all_SP;
-	//address(PPU_ctrl_reg_2) = REG_2_IM_able;
-	gotoxy(10,10);
-	cprintf("Hello World!!!");
 	for(;;){
-		key = read_joy();
-		//scrright();
-		keyproc();
-		waitvblank();
+		readjoy();
+		// keyproc();
+		switch(JOY_VAL){
+			case JOY_LEFT:
+				--spx;
+				break;
+			case JOY_RIGHT:
+				++spx;
+				break;
+			case JOY_UP:
+				--spy;
+				break;
+			case JOY_DOWN:
+				++spy;
+				break;
+			case JOY_B:
+			case JOY_A:
+				if(okey != JOY_VAL){
+					beep();
+					acc = SP_MINACC;
+				}
+				break;
+			case JOY_START:
+				if(okey != JOY_VAL){
+					running = !running;
+				}
+				break;
+		}
+		okey = getjoy();
 		++ix;
-		okey = key;
+		if(!running){
+			waitvblank();
+			sptile(1,sps[(ix>>2)%3]);
+			continue;
+		}
+		
+		scrright();
+		if(spx>SP_MIDLEX)
+			--spx;
+			
+		spy += (acc/8+1);
+		if(spy<SP_Y_MIN)
+			spy = SP_Y_MIN;
+		else if(spy>SP_Y_MAX)
+			spy = SP_Y_MAX;
+		if(acc<SP_MAXACC)
+			++acc;
+		waitvblank();
+		splocal(1, (u8)spx, spy);
+		sptile(1,sps[(ix>>2)%3]);
 	}
 }

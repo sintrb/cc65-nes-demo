@@ -4,31 +4,29 @@
 
 
 ;; FIXME: optimize zeropage usage
+Temp0			=	$50
+Temp1			=	$51
+Temp2			=	$52
+Temp3			=	$53
+Temp4			=	$54
+Temp5			=	$55
+Temp6			=	$56
+Temp7			=	$57
+Temp8			=	$58
+Temp9			=	$59
+Tempa			=	$5a
+Tempb			=	$5b
+Tempc			=	$5c
+Tempd			=	$5d
+Tempe			=	$5e
+Tempf			=	$5f
 
-SCREEN_PTR	= $62           ;2
-CRAM_PTR        = $64           ;2
-CHARCOLOR	= $66
-BGCOLOR		= $67
-RVS		= $68
-CURS_X		= $69
-CURS_Y		= $6a
-
-tickcount       = $6b           ;2
-
-VBLANK_FLAG	= $70
-
-ringbuff        = $0200
-ringwrite       = $71
-ringread        = $72
-ringcount       = $73
-
-ppuhi           = $74
-ppulo           = $75
-ppuval          = $76
-
-screenrows 	= (30-1)
-charsperline    = 32
-xsize           = charsperline
+PPU_CTRL1_VAL	=	$60			;the value of PPU_CTRL1
+PPU_CTRL2_VAL	=	$61			;the value of PPU_CTRL2
+JOY_VAL			=	$62
+JOY1_VAL		=	$63
+SCROLL_X		=	$64
+SCROLL_Y		=	$65
 
 ;; PPU defines
 
@@ -66,7 +64,7 @@ APU_MODLEN      = $4013         ; Delta Modulation Data Length Register (W)
 APU_SPR_DMA    	= $4014         ; Sprite DMA Register (W)
 APU_CHANCTRL   	= $4015         ; Sound/Vertical Clock Signal Register (R)
 APU_PAD1       	= $4016         ; Joypad #1 (RW)
-APU_PAD2	= $4017         ; Joypad #2/SOFTCLK (RW)
+APU_PAD2		= $4017         ; Joypad #2/SOFTCLK (RW)
 
 
 CH_HLINE    	= 11
