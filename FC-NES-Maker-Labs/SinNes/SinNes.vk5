@@ -1,0 +1,15 @@
+[Project]
+name=SinNes
+
+
+[List]
+Count=8
+0=HelloWorld.c
+1=nes.inc
+2=nes.cfg
+3=ASCII.chr
+4=zeropage.inc
+5=Build.cmd
+6=sinnes.h
+
+7=ctr0.s

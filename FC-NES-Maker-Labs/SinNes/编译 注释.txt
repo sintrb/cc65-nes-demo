@@ -1,0 +1,16 @@
+// 先删除吧
+del *.o
+del *.nes
+
+// 删除crt0.o模块
+ar65 d nes.lib crt0.o
+
+// 编译crt0.o模块
+ca65 -t nes crt0.s
+// 添加模块
+ar65 a nes.lib crt0.o
+
+// 编译C文件
+cl65 -C nes.cfg -t nes -o HelloWorld.nes HelloWorld.c
+
+pause
