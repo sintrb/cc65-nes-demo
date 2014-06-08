@@ -107,6 +107,9 @@ nmi:    pha
         bne     @s
         inc     tickcount+1
 
+        .import	_mynmi	; 先导入我们自定义的mynmi函数，C函数让汇编调用需要一个下划线(_)
+        jsr		_mynmi	; 执行我们自定义的mynmi函数
+
 @s:     jsr     ppubuf_flush
 
         ; reset the video counter
@@ -118,9 +121,6 @@ nmi:    pha
         ; reset scrolling
         sta     PPU_VRAM_ADDR1
         sta     PPU_VRAM_ADDR1
-	
-		.import	_mynmi	; 先导入我们自定义的mynmi函数，C函数让汇编调用需要一个下划线(_)
-		jsr		_mynmi	; 执行我们自定义的mynmi函数
 		
         pla
         tax
