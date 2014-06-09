@@ -55,7 +55,8 @@ start:
 		sta	sp+1            ; Set argument stack ptr
 		jsr initlib
 		
-		lda     #$3f	;3?¨º??¡¥¨¦??¨¬
+		; # init pal
+		lda     #$3f
 		sta     $2006
 		lda     #$00
 		sta     $2006
@@ -73,18 +74,79 @@ _exit:
 ; ------------------------------------------------------------------------
 ; System V-Blank Interupt
 ; ------------------------------------------------------------------------
-
 nmi:    pha
 		tya
 		pha
 		txa
 		pha
+
+		; begin: transfer task
+		
+		TASKS = $0300	; tasks use $0300, size is TASKS_MAX
+		TASKS_MAX = 5*8	; max tasks size
+		TASK_BUF = $30	; a zeropage var to save ram point, 2 bytes
+		TASK_LEN = TASK_BUF+2	; a zeropage var to save data length 
+		
+		ldx		#$00
+		; find task & jump to dotask
+		@checktask:
+		lda		TASKS, x	; load length(count)
+		bne		@dotask
+		; next task
+		inx
+		inx
+		inx
+		inx
+		inx
+		cpx		#TASKS_MAX
+		bne		@checktask
+		jmp		@endtask
+		
+		; do one task
+		@dotask:
+		sta		TASK_LEN
+		lda		TASKS+1, x	; rambuf[0]
+		sta		TASK_BUF
+		lda		TASKS+2, x	; rambuf[1]
+		sta		TASK_BUF+1
+		lda		TASKS+4, x	; vramst[1], high byte
+		sta		PPU_VRAM_ADDR2
+		lda		TASKS+3, x	; vramst[0], low byte
+		sta		PPU_VRAM_ADDR2		
+		ldy		#$00
+		; wtite data to PPU_VRAM_IO from ram
+		@gowrite:
+		lda		(TASK_BUF),y
+		sta		PPU_VRAM_IO
+		iny
+		cpy		TASK_LEN
+		bne		@gowrite
+		; mark this task is done, set length to 0
+		lda		#$00
+		sta		TASKS, x
+		; next task
+		inx
+		inx
+		inx
+		inx
+		inx
+		cpx		#TASKS_MAX
+		bne		@checktask
+		
+		@endtask:
+		
+		; end task
+		
+		
+		; set regs
 		lda		#$02
 		sta		$4014
 		lda		PPU_CTRL1_VAL
 		sta		PPU_CTRL1
 		lda		PPU_CTRL2_VAL
 		sta		PPU_CTRL2
+		
+		
 		lda		SCROLL_X
 		sta		PPU_VRAM_ADDR1
 		lda		SCROLL_Y
