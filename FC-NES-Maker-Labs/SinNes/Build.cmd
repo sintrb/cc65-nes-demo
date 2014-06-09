@@ -42,12 +42,12 @@ Echo .
 Echo 第一步，删除模块与NES
 del *.o
 del *.nes
-ar65 d nes.lib ctr0.o
-
+ar65 d nes.lib crt0.o
+ 
 Echo .
 Echo 第二步，编译加插的模块，并添加到库
-ca65 -t nes ctr0.s
-ar65 a nes.lib ctr0.o
+ca65 -t nes crt0.s
+ar65 a nes.lib crt0.o
 
 Echo .
 Echo 第三步，编译C，并连接库，生成nes

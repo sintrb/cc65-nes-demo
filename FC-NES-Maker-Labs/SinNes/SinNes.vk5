@@ -12,4 +12,4 @@ Count=8
 5=Build.cmd
 6=sinnes.h
 
-7=ctr0.s
+7=crt0.s
