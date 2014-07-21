@@ -33,6 +33,9 @@ typedef struct // sprite struct
 #define SP_Y_MIN	0x06
 #define SP_Y_MAX	0xC4
 
+
+#define SP_IX_SCORE	0x05
+
 typedef struct{
 	u8 length;	// length(count) of data bytes
 	u8 *rambuf;	// data buf in ram
@@ -49,7 +52,7 @@ typedef struct{
 #define DOOR_WIDTH				2	// 管道宽度(单位8pix)
 u8 tiles_buf[2][SCRREN_TITLNUM_V];
 u8 door_buf[64/DOOR_WIDTH];	// 用来保存管道位置
-
+int hiscore = 0;
 void switchname()
 {
 	if(IS_NAME0()){
@@ -114,16 +117,13 @@ void splocal(u8 spix, u8 x, u8 y)
 	sp[spix+3].y = y+8;
 }
 
-// 使用精灵显示分数
-u8 scores[5] = {1,2,3,4,5};
-void spnums(u8 spix, u8 x, u8 y)
+// 将spix开始的n个精灵设置到统一水平线上
+void sphline(u8 spix, u8 x, u8 y, u8 n)
 {
 	u8 i;
-	for(i=0; i<sizeof(scores); ++i){
-		sp[spix+i].x = x;
-		sp[spix+i].y = y;
-		sp[spix+i].tile = '0'+scores[i];
-		x += 8;
+	for(i=0; i<n; ++i, ++spix){
+		sp[spix].x = x+8*i;
+		sp[spix].y = y;
 	}
 }
 
@@ -139,13 +139,64 @@ u8 rnd(u8 below)
 	return rnds[rndsd+ix]%below;
 }
 
+// 将分数通过精灵输出
+void score2sp(u8 spix, int score)
+{
+	sp[spix+0].tile = score/1000;
+	sp[spix+1].tile = (score-(sp[spix+0].tile*1000))/100;
+	sp[spix+2].tile = (score-(sp[spix+0].tile*1000 + sp[spix+1].tile*100))/10;
+	sp[spix+3].tile = score%10;
+	
+	sp[spix+0].tile = sp[spix+0].tile + '0';
+	sp[spix+1].tile = sp[spix+1].tile + '0';
+	sp[spix+2].tile = sp[spix+2].tile + '0';
+	sp[spix+3].tile = sp[spix+3].tile + '0';
+}
+
+// 游戏结束
+void over(int score)
+{
+	u8 ix;
+	ix = SP_IX_SCORE;
+	
+	// 保存最高分
+	if(score > hiscore){
+		hiscore = score;
+	}
+	sp[ix++].tile = 'S';
+	sp[ix++].tile = 'C';
+	sp[ix++].tile = 'O';
+	sp[ix++].tile = ':';
+	score2sp(ix, score);
+	waitvblank();
+	sphline(SP_IX_SCORE, 112,50,8);
+	ix += 4;
+	
+	
+	sp[ix++].tile = 'H';
+	sp[ix++].tile = 'I';
+	sp[ix++].tile = 'G';
+	sp[ix++].tile = ':';
+	score2sp(ix, hiscore);
+	sphline(SP_IX_SCORE+8, 112,62,8);
+	
+	
+	beep();
+	
+	// 等待START按键
+	for(;readjoy()!=JOY_START;);
+}
+
 // 游戏
 void game()
 {
-	u8 spx=0xc0, ix, running=0, okey, i, n, m, loadedattr0=0;
+	u8 spx=0xc0, ix, running=0, okey, i, n, m, loadedattr0=0, started=0;
 	int acc = 0;
 	int spy = 0x58;
+	int doory = 0;
+	int score = 0;
 	const u8 sps[] = {0x80, 0x82, 0x84};
+	score = 0;
 	
 	REG(PPU_CTRL1) = 0x00;
 	REG(PPU_CTRL2) = 0x00;
@@ -170,10 +221,20 @@ void game()
 	loadattr1(map_atb+VRAM_ATTR_LEN);
 	sptile(1, 0x80);
 	splocal(1, spx, spy);
+	
+	sp[SP_IX_SCORE+0].tile = '0';
+	sp[SP_IX_SCORE+1].tile = '0';
+	sp[SP_IX_SCORE+2].tile = '0';
+	sp[SP_IX_SCORE+3].tile = '0';
+	sphline(5, 120,10,4);
+	
 	PC2_VAL = PC2_SHOW_BG | PC2_SHOW_L8BG | PC2_SHOW_SP | PC2_SHOW_L8SP;
 	NMI_ENABLE();
 	
 	fillram(door_buf, sizeof(door_buf), 0);
+	
+	
+	
 	
 	for(;;){
 		readjoy();
@@ -204,6 +265,7 @@ void game()
 			case JOY_START:
 				if(okey != JOY_VAL){
 					running = !running;
+					beep();
 				}
 				break;
 			case JOY_SELECT:
@@ -291,37 +353,41 @@ void game()
 			tasks[1].length = tasks[0].length = SCRREN_TITLNUM_V;
 		}
 		
-		/*
-		if(loadedattr0 && SOLX_VAL%64==20){
-			for(i=(sizeof(scores)-1); i; --i){
-				++scores[i];
-				if(scores[i]<10)
-					break;
-				else
-					scores[i] = 0;
-			}
-			spnums(5,100,10);
-		}
-		
-		*/
-		
-		
 		n = SOLX_VAL + spx + 16; //(SOLX_VAL + spx +16 )>>4;
 		m = n>>4;
+		doory = door_buf[m];// ? door_buf[m]: door_buf[m+1];
 		
-		scores[0] = m/100;
-		scores[1] = m/10 - scores[0]*10;
-		scores[2] = m%10;
+		// up or down check
+		if(spy<6 || spy>=SP_Y_MAX){
+			break;
+		}
+		// door check
+		if(doory){
+			started = 1;
+			doory *= 8;
+			// +-2
+			if((spy-6+2)<doory || (spy-6-16-4-2)>(doory+DOOR_WIDTH*8)){
+				break;
+			}
+		}
+
 		
-		if(door_buf[m]){
-			scores[4] = door_buf[m]%10;
-			scores[3] = door_buf[m]/10;
+		if(loadedattr0 && SOLX_VAL%64==20 && started){
+			++score;
+			
+			// write to sprite-buffer
+			score2sp(SP_IX_SCORE, score);
+			
 			beep();
 		}
+
 		
-		spnums(5,100,10);
+		
+
+
 		// waitvblank();
 	}
+	over(score);
 }
 
 void main()
@@ -332,4 +398,5 @@ void main()
 		waitvblank();
 	}
 }
+
 
