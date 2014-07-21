@@ -67,6 +67,7 @@ void switchname()
 	}
 }
 
+
 // 背景右移
 void scrright()
 {
@@ -85,6 +86,7 @@ void scrleft()
 	--SOLX_VAL;
 }
 
+// 横屏按键处理，没用到
 void keyproc()
 {
 	if(JOY_VAL == JOY_RIGHT){
@@ -158,6 +160,7 @@ void over(int score)
 {
 	u8 ix;
 	ix = SP_IX_SCORE;
+	fillram(sp, 0x100, 0x00);	// 清空精灵缓存
 	
 	// 保存最高分
 	if(score > hiscore){
@@ -204,6 +207,7 @@ void game()
 	PC1_VAL = 0x00;
 	PC2_VAL = 0x00;
 	SOLX_VAL = 0x00;
+	fillram(sp, 0x100, 0x00);	// 清空精灵缓存
 	fillram(sp, 0x100, 0x00);	// 清空精灵
 	fillram(tasks, 0x100, 0x00);	// 清空PPU任务
 
