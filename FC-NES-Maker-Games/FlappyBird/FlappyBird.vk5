@@ -3,7 +3,7 @@ name=FlappyBird
 
 
 [List]
-Count=10
+Count=12
 0=crt0.s
 1=nes.inc
 2=nes.cfg
@@ -15,4 +15,5 @@ Count=10
 7=map.nmp
 8=²½ÖèËµÃ÷.txt
 9=sinnes.h
-10=sinnes.h
+10=sp.col
+11=about.nmp

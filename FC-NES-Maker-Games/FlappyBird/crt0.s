@@ -205,14 +205,29 @@ _map_nam_s:
 .export _map_col_s
 _map_col_s:
 	.incbin	"map.col"
+	
+; 精灵调色表
+.export _sp_col_s
+_sp_col_s:
+	.incbin	"sp.col"
 
 ; 背景属性表
 .export _map_atb_s
 _map_atb_s:
 	.incbin	"map.atb"
-	
-	
-	
+
+; 关于,命名表
+.export _about_nam_s
+_about_nam_s:
+	.incbin	"about.nam"
+; 关于,属性表
+.export _about_atb_s
+_about_atb_s:
+	.incbin	"about.atb"
+; 关于,调色
+.export _about_col_s
+_about_col_s:
+	.incbin	"about.col"
 	
 	
 

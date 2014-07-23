@@ -1,10 +1,16 @@
 #include "sinnes.h"
-extern u8 map_nam_s, map_col_s, map_atb_s;
+extern u8 map_nam_s, map_col_s, sp_col_s, map_atb_s, about_nam_s, about_col_s, about_atb_s;
 
 // 需进行去地址操作
 #define map_nam (&map_nam_s)
 #define map_col (&map_col_s)
+#define sp_col	(&sp_col_s)
 #define map_atb (&map_atb_s)
+
+#define about_nam (&about_nam_s)
+#define about_atb (&about_atb_s)
+#define about_col (&about_col_s)
+
 
 #define NMI_ENABLE()	{PC1_VAL |= PC1_NMI; address(PPU_CTRL1) = PC1_VAL;}
 #define NMI_DISABLE()	{PC1_VAL &= ~PC1_NMI; address(PPU_CTRL1) = PC1_VAL;}
@@ -28,13 +34,15 @@ typedef struct // sprite struct
 #define sp	((t_sprite*)0x0200)
 
 #define SP_MIDLEX	0x70
-#define SP_MAXACC	18
-#define SP_MINACC	-24
+#define SP_MAXACC	24	// 最大重力加速度
+#define SP_MINACC	-26	// 最小重力加速度（跃起速度）
 #define SP_Y_MIN	0x06
 #define SP_Y_MAX	0xC4
 
 
+#define SP_IX_BIRD	0x01
 #define SP_IX_SCORE	0x05
+#define SP_IX_SCORE_H	(SP_IX_SCORE+8)
 
 typedef struct{
 	u8 length;	// length(count) of data bytes
@@ -43,14 +51,15 @@ typedef struct{
 }t_pputask;
 
 #define TASKS_MAX	8	// max count of task
-#define	tasks ((t_pputask*)0x0300)
+#define	tasks ((t_pputask*)0x0300)	// PPU任务队列
 
 
 #define SCRREN_TITLNUM_V		26	// 有效屏幕高(单位8pix)
-#define DOOR_HEIGHT				7	// 管道中间的缝隙间隔(单位8pix)
+#define DOOR_HEIGHT				8	// 管道中间的缝隙间隔(单位8pix)
 #define DOOR_SPACE_BLOCK		4	// 两管道出现的间隔(单位16pix)
 #define DOOR_WIDTH				2	// 管道宽度(单位8pix)
-u8 tiles_buf[2][SCRREN_TITLNUM_V];
+
+u8 tiles_buf[2][SCRREN_TITLNUM_V];	// PPU任务缓冲
 u8 door_buf[64/DOOR_WIDTH];	// 用来保存管道位置
 int hiscore = 0;
 void switchname()
@@ -155,45 +164,94 @@ void score2sp(u8 spix, int score)
 	sp[spix+3].tile = sp[spix+3].tile + '0';
 }
 
+// 等待START按键并释放
+void waitstartkey()
+{
+	for(;readjoy()!=JOY_START;);
+	for(;readjoy()==JOY_START;);
+}
+
 // 游戏结束
 void over(int score)
 {
-	u8 ix;
+	u8 ix, i;
 	ix = SP_IX_SCORE;
 	fillram(sp, 0x100, 0x00);	// 清空精灵缓存
 	
-	// 保存最高分
-	if(score > hiscore){
-		hiscore = score;
-	}
 	sp[ix++].tile = 'S';
 	sp[ix++].tile = 'C';
 	sp[ix++].tile = 'O';
 	sp[ix++].tile = ':';
 	score2sp(ix, score);
 	waitvblank();
-	sphline(SP_IX_SCORE, 112,50,8);
+	sphline(SP_IX_SCORE, 96,50,8);
 	ix += 4;
-	
-	
+
+		// 保存最高分
+	if(score > hiscore){
+		// 破纪录，高分颜色变为红色
+		hiscore = score;
+		for(i=0; i<8; ++i){
+			sp[SP_IX_SCORE_H+i].attr=0x03;
+		}
+	}
+	else{
+		// 没破记录，默认色
+		for(i=0; i<8; ++i){
+			sp[SP_IX_SCORE_H+i].attr=0x00;
+		}
+	}
+	ix = SP_IX_SCORE_H;
 	sp[ix++].tile = 'H';
 	sp[ix++].tile = 'I';
 	sp[ix++].tile = 'G';
 	sp[ix++].tile = ':';
 	score2sp(ix, hiscore);
-	sphline(SP_IX_SCORE+8, 112,62,8);
+	sphline(SP_IX_SCORE+8, 96,62,8);
 	
 	
 	beep();
 	
-	// 等待START按键
+	waitstartkey();
+}
+
+// 载入背景
+void loadmap()
+{
+	// 加载背景
+	loadname0(map_nam);	// 命名表
+	loadattr0(map_atb);	// 属性表
+	
+	loadbgpal(map_col);	// 背景调色
+	loadsppal(sp_col);	// 精灵调色
+	
+	loadname1(map_nam+VRAM_NAME_LEN);
+	loadattr1(map_atb+VRAM_ATTR_LEN);
+}
+
+void about()
+{
+	REG(PPU_CTRL1) = 0x00;
+	REG(PPU_CTRL2) = 0x00;
+	loadname0(about_nam);
+	loadattr0(about_atb);
+	loadbgpal(about_col);
+	setppusol(0,0);
+	REG(PPU_CTRL1) = PC1_NAME0;
+	REG(PPU_CTRL2) = PC2_SHOW_BG | PC2_SHOW_L8BG | PC2_SHOW_L8SP;
 	for(;readjoy()!=JOY_START;);
+	for(;readjoy()==JOY_START;);
+	
+	REG(PPU_CTRL1) = 0x00;
+	REG(PPU_CTRL2) = 0x00;
+	//loadmap();
+	NMI_ENABLE();
 }
 
 // 游戏
 void game()
 {
-	u8 spx=0xc0, ix, running=0, okey, i, n, m, loadedattr0=0, started=0;
+	u8 spx=0xc0, ix, running=0, okey, i, n, m, loadedattr0=0, begined=0, started=0;
 	int acc = 0;
 	int spy = 0x58;
 	int doory = 0;
@@ -201,45 +259,45 @@ void game()
 	const u8 sps[] = {0x80, 0x82, 0x84};
 	score = 0;
 	
+	// 关显示
 	REG(PPU_CTRL1) = 0x00;
 	REG(PPU_CTRL2) = 0x00;
 	
 	PC1_VAL = 0x00;
 	PC2_VAL = 0x00;
 	SOLX_VAL = 0x00;
+	loadmap();
+	
 	fillram(sp, 0x100, 0x00);	// 清空精灵缓存
-	fillram(sp, 0x100, 0x00);	// 清空精灵
 	fillram(tasks, 0x100, 0x00);	// 清空PPU任务
-
+	
 	tasks[0].rambuf = tiles_buf[0];
 	tasks[1].rambuf = tiles_buf[1];
+
 	
-	// 加载背景
-	loadname0(map_nam);	// 命名表
-	loadattr0(map_atb);	// 属性表
+	sptile(SP_IX_BIRD, 0x80);
+	splocal(SP_IX_BIRD, spx, spy);
+	sp[SP_IX_SCORE+0].tile = 0;
+	sp[SP_IX_SCORE+1].tile = 0;
+	sp[SP_IX_SCORE+2].tile = 0;
+	sp[SP_IX_SCORE+3].tile = 0;
+	sphline(SP_IX_SCORE, 120,10,4);
 	
-	loadbgpal(map_col);	// 调色
-	loadsppal(map_col);
+	// 显示最高分
+	sp[SP_IX_SCORE_H+0].tile = 'H';
+	sp[SP_IX_SCORE_H+1].tile = 'I';
+	sp[SP_IX_SCORE_H+2].tile = 'G';
+	sp[SP_IX_SCORE_H+3].tile = ':';
+	score2sp(SP_IX_SCORE_H+4, hiscore);
+	sphline(SP_IX_SCORE_H, 96,62,8);
 	
-	loadname1(map_nam+VRAM_NAME_LEN);
-	loadattr1(map_atb+VRAM_ATTR_LEN);
-	sptile(1, 0x80);
-	splocal(1, spx, spy);
-	
-	sp[SP_IX_SCORE+0].tile = '0';
-	sp[SP_IX_SCORE+1].tile = '0';
-	sp[SP_IX_SCORE+2].tile = '0';
-	sp[SP_IX_SCORE+3].tile = '0';
-	sphline(5, 120,10,4);
-	
+	// 开显示
 	PC2_VAL = PC2_SHOW_BG | PC2_SHOW_L8BG | PC2_SHOW_SP | PC2_SHOW_L8SP;
+	// nmi enable
 	NMI_ENABLE();
 	
 	fillram(door_buf, sizeof(door_buf), 0);
-	
-	
-	
-	
+
 	for(;;){
 		readjoy();
 		rndsd += 3; // 随机一下 
@@ -269,11 +327,17 @@ void game()
 			case JOY_START:
 				if(okey != JOY_VAL){
 					running = !running;
+					if(running && !begined){
+						begined = 1;
+						score2sp(SP_IX_SCORE, score);
+						fillram(sp+SP_IX_SCORE_H, 0x04*8, 0x00);
+					}
 					beep();
 				}
 				break;
 			case JOY_SELECT:
-				// 结束
+				if(!begined)
+					about();
 				return;
 		}
 		okey = getjoy();
@@ -362,7 +426,7 @@ void game()
 		doory = door_buf[m];// ? door_buf[m]: door_buf[m+1];
 		
 		// up or down check
-		if(spy<6 || spy>=SP_Y_MAX){
+		if(spy<=SP_Y_MIN || spy>=SP_Y_MAX){
 			break;
 		}
 		// door check
