@@ -13,7 +13,7 @@ Mapper3的例子
 
 #### NMI-Demo
 
-NMI终端例子
+NMI中断例子
 
 ## FC-NES-Maker-Games
 
