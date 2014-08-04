@@ -229,6 +229,7 @@ void loadmap()
 	loadattr1(map_atb+VRAM_ATTR_LEN);
 }
 
+// 关于
 void about()
 {
 	REG(PPU_CTRL1) = 0x00;
@@ -299,81 +300,7 @@ void game()
 	fillram(door_buf, sizeof(door_buf), 0);
 
 	for(;;){
-		readjoy();
-		rndsd += 3; // 随机一下 
-		// keyproc();
-		switch(JOY_VAL){
-			case JOY_LEFT:
-				--spx;
-				break;
-			case JOY_RIGHT:
-				++spx;
-				break;
-			case JOY_UP:
-				--spy;
-				break;
-			case JOY_DOWN:
-				++spy;
-				break;
-			case JOY_B:
-			case JOY_A:
-				if(okey != JOY_VAL){
-					beep();
-					acc = SP_MINACC;
-				}
-				-- rndsd; // 再随机一下
-				ix = 0;
-				break;
-			case JOY_START:
-				if(okey != JOY_VAL){
-					running = !running;
-					if(running && !begined){
-						begined = 1;
-						score2sp(SP_IX_SCORE, score);
-						fillram(sp+SP_IX_SCORE_H, 0x04*8, 0x00);
-					}
-					beep();
-				}
-				break;
-			case JOY_SELECT:
-				if(!begined)
-					about();
-				return;
-		}
-		okey = getjoy();
-		++ix;
-		if(!running){
-			waitvblank();
-			sptile(1,sps[(ix>>2)%3]);
-			continue;
-		}
-		
-		scrright();
-		if(spx>SP_MIDLEX)
-			--spx;
-		else if(!loadedattr0){
-			tasks[2].vramst = VRAM_ATTR0;
-			tasks[2].rambuf = map_atb+VRAM_ATTR_LEN;
-			tasks[2].length = VRAM_ATTR_LEN;
-			loadedattr0 = 1;
-			waitvblank();
-			PC1_VAL |= PC1_INC32;
-			continue;
-		}
-		spy += (acc/8+1);
-		if(spy<SP_Y_MIN){
-			spy = SP_Y_MIN;
-			// acc = 0;
-		}
-		else if(spy>SP_Y_MAX){
-			spy = SP_Y_MAX;
-		}
-		if(acc<SP_MAXACC)
-			++acc;
-		waitvblank();
-		splocal(1, (u8)spx, spy);
-		sptile(1,sps[(ix>>2)%3]);
-		
+		//  先检查碰撞
 		if(loadedattr0 && SOLX_VAL%16 == 0){
 			// 16=2*8
 			m = SOLX_VAL/16;
@@ -433,28 +360,104 @@ void game()
 		if(doory){
 			started = 1;
 			doory *= 8;
-			// +-2
+			// +-2，正负2的容差
 			if((spy-6+2)<doory || (spy-6-16-4-2)>(doory+DOOR_WIDTH*8)){
 				break;
 			}
 		}
 
-		
 		if(loadedattr0 && SOLX_VAL%64==20 && started){
+			// 过了一关
 			++score;
-			
 			// write to sprite-buffer
 			score2sp(SP_IX_SCORE, score);
-			
 			beep();
 		}
-
+		// 死亡状态判断完成
+	
 		
+		// 根据按键计算下一帧数据
 		
-
-
-		// waitvblank();
+		readjoy();
+		rndsd += 3; // 随机一下 
+		switch(JOY_VAL){
+			case JOY_LEFT:
+				--spx;
+				break;
+			case JOY_RIGHT:
+				++spx;
+				break;
+			case JOY_UP:
+				--spy;
+				break;
+			case JOY_DOWN:
+				++spy;
+				break;
+			case JOY_B:
+			case JOY_A:
+				if(okey != JOY_VAL){
+					beep();
+					acc = SP_MINACC;
+				}
+				-- rndsd; // 再随机一下
+				ix = 0;
+				break;
+			case JOY_START:
+				if(okey != JOY_VAL){
+					running = !running;
+					if(running && !begined){
+						begined = 1;
+						score2sp(SP_IX_SCORE, score);
+						fillram(sp+SP_IX_SCORE_H, 0x04*8, 0x00);
+					}
+					beep();
+				}
+				break;
+			case JOY_SELECT:
+				if(!begined)
+					about();
+				return;
+		}
+		okey = getjoy();
+		++ix;
+		if(!running){
+			waitvblank();
+			sptile(1,sps[(ix>>2)%3]);
+			continue;
+		}
+		
+		scrright();
+		if(spx>SP_MIDLEX)
+			--spx;
+		else if(!loadedattr0){
+			tasks[2].vramst = VRAM_ATTR0;
+			tasks[2].rambuf = map_atb+VRAM_ATTR_LEN;
+			tasks[2].length = VRAM_ATTR_LEN;
+			loadedattr0 = 1;
+			waitvblank();
+			PC1_VAL |= PC1_INC32;
+			continue;
+		}
+		spy += (acc/8+1);	// 自由下落
+		if(spy<SP_Y_MIN){
+			spy = SP_Y_MIN;
+			// acc = 0;
+		}
+		else if(spy>SP_Y_MAX){
+			spy = SP_Y_MAX;
+		}
+		if(acc<SP_MAXACC)
+			++acc;
+		
+		splocal(1, (u8)spx, spy);
+		sptile(1,sps[(ix>>2)%3]);
+		
+		// 等等一个中断
+		// 以便让所有在缓冲区的数据都传递到ppu
+		waitvblank();
 	}
+	
+	// 游戏结束
 	over(score);
 }
 
