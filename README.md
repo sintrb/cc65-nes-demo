@@ -19,7 +19,7 @@ NMI中断例子
 
 FC游戏大师的一些完整游戏工程
 
-#### FlappyBird
+#### [FlappyBird](https://github.com/sintrb/cc65-nes-demo/tree/master/FC-NES-Maker-Games/FlappyBird)
 
 FlappyBird游戏，来个截图：
 
